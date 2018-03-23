@@ -2,26 +2,9 @@ package main
 
 import (
 	"fmt"
+	"strings"
 )
 
-/* Recommended structure
-type nfa struct {
-...
-}
-func regexcompile(r string) nfa {
-...
-return n
-}
-func (n nfa) regexmatch(n nfa, r sting) bool {
-...
-return ismatch
-}
-func main() {
-n := regexcompile("01*0")
-t := n.regexmatch("01110")
-f := n.regexmatch("1000001")
-}
-*/
 //Map of the special characters with their precedence
 var precedenceMap = map[rune]int{
 	'+': 3, //One or more
@@ -45,7 +28,7 @@ type nfa struct {
 }
 
 //Function converts a positfoxed regular expression string into an NFA
-func postfixToNFA(postfix string) *nfa {
+func postfixToNFA(postfix string) nfa {
 	//Create empty nfa stack
 	nfaStack := []*nfa{}
 
@@ -100,7 +83,7 @@ func postfixToNFA(postfix string) *nfa {
 		}
 	}
 	//Return the final nfa
-	return nfaStack[0]
+	return *nfaStack[0]
 }
 
 //Gets the nodes which "s" current node points to if the s is not the same as the "a" accept node
@@ -117,6 +100,23 @@ func addState(l []*nfaNode, s *nfaNode, a *nfaNode) []*nfaNode {
 	}
 	//Return the nodes list
 	return l
+}
+
+//Compiles a regex string into an NFA linked list
+func regexcompile(r string) nfa {
+	//Declare the nfa
+	var nfa nfa
+	//Trim the white spaces from the strng
+	nr := strings.TrimSpace(r)
+	//Make sure the string contains something
+	if len(nr) > 0 {
+		//Convert the infixed regex to postfix
+		nr = convertInfixToPostfix(nr)
+		//Create the NFA linked list from the postifxed regex
+		nfa = postfixToNFA(nr)
+	}
+	//Return the nfa
+	return nfa
 }
 
 //Function used to match a string to a regex(nfa structure)
@@ -160,20 +160,13 @@ func (nfa nfa) regexmatch(input string) bool {
 }
 
 func main() {
-
-	fmt.Printf("From a.(b.b)*.a to %s", convertInfixToPostfix("a.(b.b)*.a"))
-	fmt.Printf("\nFrom 0.0.(1.1)*.0 to %s", convertInfixToPostfix("0.0.(1.1)*.0"))
-	fmt.Printf("\n a.b.c* to %s", convertInfixToPostfix("a.b.c*"))
-	//Examples from lecture video
-	fmt.Printf("\n (a.(b|d))* to %s", convertInfixToPostfix("(a.(b|d))*"))
-	fmt.Printf("\n a.(b|d).c* to %s", convertInfixToPostfix("a.(b|d).c*"))
-	fmt.Printf("\n a.(b.b)+.c to %s\n", convertInfixToPostfix("a.(b.b)+.c"))
-
-	nfa := postfixToNFA("ab.c*|")
-	fmt.Println(nfa.regexmatch("ccc"))
-
-	nfa = postfixToNFA("ab.c*|")
-	fmt.Println(nfa.regexmatch("def"))
+	//Accept all strings of 0's and 1;s that begin with two zeros
+	n := regexcompile("0.0.(0|1)*")
+	fmt.Println("Regex: 0.0.(0|1)*")
+	fmt.Println("001110 passes:", n.regexmatch("001110"))
+	fmt.Println("01110 passes:", n.regexmatch("01110"))
+	fmt.Println("1000001 passes:", n.regexmatch("1000001"))
+	fmt.Println("001000001 passes:", n.regexmatch("001000001"))
 }
 
 // Finds the precedence of a character
