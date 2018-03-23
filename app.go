@@ -22,9 +22,77 @@ type nfaNode struct {
 	edge2  *nfaNode
 }
 
+//Stroage for the start and end node of the NFA linked list
 type nfa struct {
 	initial *nfaNode
 	accept  *nfaNode
+}
+
+func main() {
+	//Accept all strings of 0's and 1;s that begin with two zeros
+	n := regexcompile("0.0.(0|1)*")
+	fmt.Println("Regex: 0.0.(0|1)*")
+	fmt.Println("001110 passes:", n.regexmatch("001110"))
+	fmt.Println("01110 passes:", n.regexmatch("01110"))
+	fmt.Println("1000001 passes:", n.regexmatch("1000001"))
+	fmt.Println("001000001 passes:", n.regexmatch("001000001"))
+}
+
+//Compiles a regex string into an NFA linked list
+func regexcompile(r string) nfa {
+	//Declare the nfa
+	var nfa nfa
+	//Trim the white spaces from the strng
+	nr := strings.TrimSpace(r)
+	//Make sure the string contains something
+	if len(nr) > 0 {
+		//Convert the infixed regex to postfix
+		nr = convertInfixToPostfix(nr)
+		//Create the NFA linked list from the postifxed regex
+		nfa = postfixToNFA(nr)
+	}
+	//Return the nfa
+	return nfa
+}
+
+//Function used to match a string to a regex(nfa structure)
+func (nfa nfa) regexmatch(input string) bool {
+	//State of the macth
+	ismatch := false
+	//Create the current node array with the starting nodes
+	currentNodes := []*nfaNode{}
+	//Nodes that the current node points to
+	nextNodes := []*nfaNode{}
+
+	//Fill the current nodes from the nfa's starting node and adding the accept node
+	currentNodes = addState(currentNodes[:], nfa.initial, nfa.accept)
+
+	//Loop the input string
+	for _, c := range input {
+		//Loop the current nodes array
+		for _, currentNode := range currentNodes {
+			//If the current node's sybmol is the same as the current character from the inout string
+			if currentNode.symbol == c {
+				//Get the nodes which the current node points to
+				nextNodes = addState(nextNodes[:], currentNode.edge1, nfa.accept)
+			}
+		}
+		//Swap the current nodes with the next nodes and create an empty array for the next nodes
+		currentNodes, nextNodes = nextNodes, []*nfaNode{}
+	}
+
+	//Loop the current nodes to determine if any of them is an accept node
+	for _, currentNode := range currentNodes {
+		//If the current node is an accept node
+		if currentNode == nfa.accept {
+			//Set the accept state of this regex matching
+			ismatch = true
+			break
+		}
+	}
+
+	//Return the result state
+	return ismatch
 }
 
 //Function converts a positfoxed regular expression string into an NFA
@@ -100,73 +168,6 @@ func addState(l []*nfaNode, s *nfaNode, a *nfaNode) []*nfaNode {
 	}
 	//Return the nodes list
 	return l
-}
-
-//Compiles a regex string into an NFA linked list
-func regexcompile(r string) nfa {
-	//Declare the nfa
-	var nfa nfa
-	//Trim the white spaces from the strng
-	nr := strings.TrimSpace(r)
-	//Make sure the string contains something
-	if len(nr) > 0 {
-		//Convert the infixed regex to postfix
-		nr = convertInfixToPostfix(nr)
-		//Create the NFA linked list from the postifxed regex
-		nfa = postfixToNFA(nr)
-	}
-	//Return the nfa
-	return nfa
-}
-
-//Function used to match a string to a regex(nfa structure)
-func (nfa nfa) regexmatch(input string) bool {
-	//State of the macth
-	ismatch := false
-	//Create the current node array with the starting nodes
-	currentNodes := []*nfaNode{}
-	//Nodes that the current node points to
-	nextNodes := []*nfaNode{}
-
-	//Fill the current nodes from the nfa's starting node and adding the accept node
-	currentNodes = addState(currentNodes[:], nfa.initial, nfa.accept)
-
-	//Loop the input string
-	for _, c := range input {
-		//Loop the current nodes array
-		for _, currentNode := range currentNodes {
-			//If the current node's sybmol is the same as the current character from the inout string
-			if currentNode.symbol == c {
-				//Get the nodes which the current node points to
-				nextNodes = addState(nextNodes[:], currentNode.edge1, nfa.accept)
-			}
-		}
-		//Swap the current nodes with the next nodes and create an empty array for the next nodes
-		currentNodes, nextNodes = nextNodes, []*nfaNode{}
-	}
-
-	//Loop the current nodes to determine if any of them is an accept node
-	for _, currentNode := range currentNodes {
-		//If the current node is an accept node
-		if currentNode == nfa.accept {
-			//Set the accept state of this regex matching
-			ismatch = true
-			break
-		}
-	}
-
-	//Return the result state
-	return ismatch
-}
-
-func main() {
-	//Accept all strings of 0's and 1;s that begin with two zeros
-	n := regexcompile("0.0.(0|1)*")
-	fmt.Println("Regex: 0.0.(0|1)*")
-	fmt.Println("001110 passes:", n.regexmatch("001110"))
-	fmt.Println("01110 passes:", n.regexmatch("01110"))
-	fmt.Println("1000001 passes:", n.regexmatch("1000001"))
-	fmt.Println("001000001 passes:", n.regexmatch("001000001"))
 }
 
 // Finds the precedence of a character
