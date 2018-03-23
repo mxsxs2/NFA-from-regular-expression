@@ -36,6 +36,11 @@ func main() {
 
 	fmt.Printf("From a.(b.b)*.a to %s", convertInfixToPostfix("a.(b.b)*.a"))
 	fmt.Printf("\nFrom 0.0.(1.1)*.0 to %s", convertInfixToPostfix("0.0.(1.1)*.0"))
+	fmt.Printf("\n a.b.c* to %s", convertInfixToPostfix("a.b.c*"))
+	//Examples from lecture video
+	fmt.Printf("\n (a.(b|d))* to %s", convertInfixToPostfix("(a.(b|d))*"))
+	fmt.Printf("\n a.(b|d).c* to %s", convertInfixToPostfix("a.(b|d).c*"))
+	fmt.Printf("\n a.(b.b)+.c to %s", convertInfixToPostfix("a.(b.b)+.c"))
 }
 
 // Finds the precedence of a character
