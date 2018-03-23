@@ -32,6 +32,77 @@ var precedenceMap = map[rune]int{
 	'(': 0,
 }
 
+//Structure of a node of an NFA
+type nfaNode struct {
+	symbol rune
+	edge1  *nfaNode
+	edge2  *nfaNode
+}
+
+type nfa struct {
+	initial *nfaNode
+	accept  *nfaNode
+}
+
+//Function converts a positfoxed regular expression string into an NFA
+func postfixToNFA(postfix string) *nfa {
+	//Create empty nfa stack
+	nfaStack := []*nfa{}
+
+	//Loop the regular expression
+	for _, r := range postfix {
+		switch r {
+		case '.':
+			//Pop the second fragment form the NFA stack
+			frag2 := nfaStack[len(nfaStack)-1]
+			nfaStack = nfaStack[:len(nfaStack)-1]
+			//Pop the fisrt fragment form the NFA stack
+			frag1 := nfaStack[len(nfaStack)-1]
+			nfaStack = nfaStack[:len(nfaStack)-1]
+			//Link(concatenate) the two nfas to each other.
+			frag1.accept.edge1 = frag2.initial
+			//Push the new fragmenst back to the NFA stack
+			nfaStack = append(nfaStack, &nfa{initial: frag1.initial, accept: frag2.accept})
+		case '|':
+			//Pop the second fragment form the NFA stack
+			frag2 := nfaStack[len(nfaStack)-1]
+			nfaStack = nfaStack[:len(nfaStack)-1]
+			//Pop the fisrt fragment form the NFA stack
+			frag1 := nfaStack[len(nfaStack)-1]
+			nfaStack = nfaStack[:len(nfaStack)-1]
+			//Create an empty accept node
+			accept := nfaNode{}
+			//Jin the two nodes into one node
+			initial := nfaNode{edge1: frag1.initial, edge2: frag2.initial}
+			//Set the edges of both fragments to the accept node as ether of em should be accepted
+			frag1.accept.edge1 = &accept
+			frag2.accept.edge1 = &accept
+			//Push the new initial and accept nodes to the NFA stack
+			nfaStack = append(nfaStack, &nfa{initial: &initial, accept: &accept})
+		case '*':
+			//Pop the last fragment form the NFA stack
+			frag := nfaStack[len(nfaStack)-1]
+			nfaStack = nfaStack[:len(nfaStack)-1]
+			//Create an empty accept node
+			accept := nfaNode{}
+			initial := nfaNode{edge1: frag.initial, edge2: &accept}
+			frag.accept.edge1 = frag.initial
+			frag.accept.edge2 = &accept
+			//Push the new initial and accept nodes to the NFA stack
+			nfaStack = append(nfaStack, &nfa{initial: &initial, accept: &accept})
+		default:
+			//Create an empty accept node
+			accept := nfaNode{}
+			//Add the current non special character to a new node
+			initial := nfaNode{symbol: r, edge1: &accept}
+			//Push the new nodes to the stack
+			nfaStack = append(nfaStack, &nfa{initial: &initial, accept: &accept})
+		}
+	}
+	//Return the final nfa
+	return nfaStack[0]
+}
+
 func main() {
 
 	fmt.Printf("From a.(b.b)*.a to %s", convertInfixToPostfix("a.(b.b)*.a"))
@@ -40,7 +111,10 @@ func main() {
 	//Examples from lecture video
 	fmt.Printf("\n (a.(b|d))* to %s", convertInfixToPostfix("(a.(b|d))*"))
 	fmt.Printf("\n a.(b|d).c* to %s", convertInfixToPostfix("a.(b|d).c*"))
-	fmt.Printf("\n a.(b.b)+.c to %s", convertInfixToPostfix("a.(b.b)+.c"))
+	fmt.Printf("\n a.(b.b)+.c to %s\n", convertInfixToPostfix("a.(b.b)+.c"))
+
+	nfa := postfixToNFA("ab.c*|")
+	fmt.Println(nfa)
 }
 
 // Finds the precedence of a character
