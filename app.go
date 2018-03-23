@@ -103,6 +103,62 @@ func postfixToNFA(postfix string) *nfa {
 	return nfaStack[0]
 }
 
+//Gets the nodes which "s" current node points to if the s is not the same as the "a" accept node
+func addState(l []*nfaNode, s *nfaNode, a *nfaNode) []*nfaNode {
+	//Add the current node to the inital list of nodes
+	l = append(l, s)
+	//Determine if the node is symbol node or not and the current state is not the same as accept state
+	if s != a && s.symbol == 0 {
+		//Add the node from the edge 1
+		l = addState(l, s.edge1, a)
+		if s.edge2 != nil {
+			l = addState(l, s.edge2, a)
+		}
+	}
+	//Return the nodes list
+	return l
+}
+
+//Function used to match a string to a regex(nfa structure)
+func (nfa nfa) regexmatch(input string) bool {
+	//State of the macth
+	ismatch := false
+	//Create the current node array with the starting nodes
+	currentNodes := []*nfaNode{}
+	//Nodes that the current node points to
+	nextNodes := []*nfaNode{}
+
+	//Fill the current nodes from the nfa's starting node and adding the accept node
+	currentNodes = addState(currentNodes[:], nfa.initial, nfa.accept)
+
+	//Loop the input string
+	for _, c := range input {
+		//Loop the current nodes array
+		for _, currentNode := range currentNodes {
+			//If the current node's sybmol is the same as the current character from the inout string
+			if currentNode.symbol == c {
+				//Get the nodes which the current node points to
+				nextNodes = addState(nextNodes[:], currentNode.edge1, nfa.accept)
+			}
+		}
+		//Swap the current nodes with the next nodes and create an empty array for the next nodes
+		currentNodes, nextNodes = nextNodes, []*nfaNode{}
+	}
+
+	//Loop the current nodes to determine if any of them is an accept node
+	for _, currentNode := range currentNodes {
+		//If the current node is an accept node
+		if currentNode == nfa.accept {
+			//Set the accept state of this regex matching
+			ismatch = true
+			break
+		}
+	}
+
+	//Return the result state
+	return ismatch
+}
+
 func main() {
 
 	fmt.Printf("From a.(b.b)*.a to %s", convertInfixToPostfix("a.(b.b)*.a"))
@@ -114,7 +170,10 @@ func main() {
 	fmt.Printf("\n a.(b.b)+.c to %s\n", convertInfixToPostfix("a.(b.b)+.c"))
 
 	nfa := postfixToNFA("ab.c*|")
-	fmt.Println(nfa)
+	fmt.Println(nfa.regexmatch("ccc"))
+
+	nfa = postfixToNFA("ab.c*|")
+	fmt.Println(nfa.regexmatch("def"))
 }
 
 // Finds the precedence of a character
