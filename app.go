@@ -40,6 +40,28 @@ func main() {
 	} else {
 		fmt.Println(err)
 	}
+	//Check if the + detection works
+	if n, err := regexcompile("0.0.1+"); err == nil {
+		fmt.Println("Regex: 0.0.1+")
+		fmt.Println("001110 passes:", n.regexmatch("001110"))
+		fmt.Println("001 passes:", n.regexmatch("001"))
+		fmt.Println("00111 passes:", n.regexmatch("00111"))
+		fmt.Println("00 passes:", n.regexmatch("00"))
+		fmt.Println("0001110 passes:", n.regexmatch("0001110"))
+	} else {
+		fmt.Println(err)
+	}
+	//Check if the difference between * and +
+	if n, err := regexcompile("0.0.1*"); err == nil {
+		fmt.Println("Regex: 0.0.1*")
+		fmt.Println("001110 passes:", n.regexmatch("001110"))
+		fmt.Println("001 passes:", n.regexmatch("001"))
+		fmt.Println("00111 passes:", n.regexmatch("00111"))
+		fmt.Println("00 passes:", n.regexmatch("00"))
+		fmt.Println("0001110 passes:", n.regexmatch("0001110"))
+	} else {
+		fmt.Println(err)
+	}
 
 }
 
@@ -132,7 +154,7 @@ func postfixToNFA(postfix string) (nfa, error) {
 			nfaStack = nfaStack[:len(nfaStack)-1]
 			//Create an empty accept node
 			accept := nfaNode{}
-			//Jin the two nodes into one node
+			//Join the two nodes into one node
 			initial := nfaNode{edge1: frag1.initial, edge2: frag2.initial}
 			//Set the edges of both fragments to the accept node as ether of em should be accepted
 			frag1.accept.edge1 = &accept
@@ -145,11 +167,26 @@ func postfixToNFA(postfix string) (nfa, error) {
 			nfaStack = nfaStack[:len(nfaStack)-1]
 			//Create an empty accept node
 			accept := nfaNode{}
+			//Create a new node linking back to the current fragment
 			initial := nfaNode{edge1: frag.initial, edge2: &accept}
+			//Set the edges
 			frag.accept.edge1 = frag.initial
 			frag.accept.edge2 = &accept
 			//Push the new initial and accept nodes to the NFA stack
 			nfaStack = append(nfaStack, &nfa{initial: &initial, accept: &accept})
+		case '+':
+			//Pop the last fragment form the NFA stack
+			frag := nfaStack[len(nfaStack)-1]
+			nfaStack = nfaStack[:len(nfaStack)-1]
+			//Create an empty accept node
+			accept := nfaNode{}
+			//Create a new node linking back to the current fragment
+			initial := nfaNode{edge1: frag.initial, edge2: &accept}
+			//Link the current fragment to the new fragement adn the accept node
+			frag.accept.edge1 = &initial
+			frag.accept.edge2 = &accept
+			//Push the current fragment's initial and accept nodes to the NFA stack
+			nfaStack = append(nfaStack, &nfa{initial: frag.initial, accept: &accept})
 		default:
 			//Create an empty accept node
 			accept := nfaNode{}
