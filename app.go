@@ -42,6 +42,7 @@ func main() {
 	}
 	//Check if the + detection works
 	if n, err := regexcompile("0.0.1+"); err == nil {
+		fmt.Println()
 		fmt.Println("Regex: 0.0.1+")
 		fmt.Println("001110 passes:", n.regexmatch("001110"))
 		fmt.Println("001 passes:", n.regexmatch("001"))
@@ -51,8 +52,43 @@ func main() {
 	} else {
 		fmt.Println(err)
 	}
+	if n, err := regexcompile("0.0.1+.(0|1)*"); err == nil {
+		fmt.Println()
+		fmt.Println("Regex: 0.0.1+.(0|1)*")
+		fmt.Println("001110 passes:", n.regexmatch("001110"))
+		fmt.Println("001 passes:", n.regexmatch("001"))
+		fmt.Println("00111 passes:", n.regexmatch("00111"))
+		fmt.Println("00 passes:", n.regexmatch("00"))
+		fmt.Println("0001110 passes:", n.regexmatch("0001110"))
+	} else {
+		fmt.Println(err)
+	}
+	//Check if the ? detection works
+	if n, err := regexcompile("0.0.1?"); err == nil {
+		fmt.Println()
+		fmt.Println("Regex: 0.0.1?")
+		fmt.Println("001110 passes:", n.regexmatch("001110"))
+		fmt.Println("001 passes:", n.regexmatch("001"))
+		fmt.Println("00111 passes:", n.regexmatch("00111"))
+		fmt.Println("00 passes:", n.regexmatch("00"))
+		fmt.Println("0001110 passes:", n.regexmatch("0001110"))
+	} else {
+		fmt.Println(err)
+	}
+	if n, err := regexcompile("0.0.1?.0*"); err == nil {
+		fmt.Println()
+		fmt.Println("Regex: 0.0.1?.0*")
+		fmt.Println("001110 passes:", n.regexmatch("001110"))
+		fmt.Println("001 passes:", n.regexmatch("001"))
+		fmt.Println("00100 passes:", n.regexmatch("00100"))
+		fmt.Println("00 passes:", n.regexmatch("00"))
+		fmt.Println("0000 passes:", n.regexmatch("0000"))
+	} else {
+		fmt.Println(err)
+	}
 	//Check if the difference between * and +
 	if n, err := regexcompile("0.0.1*"); err == nil {
+		fmt.Println()
 		fmt.Println("Regex: 0.0.1*")
 		fmt.Println("001110 passes:", n.regexmatch("001110"))
 		fmt.Println("001 passes:", n.regexmatch("001"))
@@ -182,11 +218,24 @@ func postfixToNFA(postfix string) (nfa, error) {
 			accept := nfaNode{}
 			//Create a new node linking back to the current fragment
 			initial := nfaNode{edge1: frag.initial, edge2: &accept}
-			//Link the current fragment to the new fragement adn the accept node
+			//Link the current fragment to the new fragement and the accept node
 			frag.accept.edge1 = &initial
 			frag.accept.edge2 = &accept
 			//Push the current fragment's initial and accept nodes to the NFA stack
 			nfaStack = append(nfaStack, &nfa{initial: frag.initial, accept: &accept})
+		case '?':
+			//Pop the last fragment form the NFA stack
+			frag := nfaStack[len(nfaStack)-1]
+			nfaStack = nfaStack[:len(nfaStack)-1]
+			//Create an empty accept node
+			accept := nfaNode{}
+			//Create a new node linking back to the current fragment
+			initial := nfaNode{edge1: &accept, edge2: frag.initial}
+			//Ste both edges of the fragment to the empty accept node
+			frag.accept.edge1 = &accept
+			frag.accept.edge2 = &accept
+			//Push the new initial and accept nodes to the NFA stack
+			nfaStack = append(nfaStack, &nfa{initial: &initial, accept: &accept})
 		default:
 			//Create an empty accept node
 			accept := nfaNode{}
@@ -196,7 +245,7 @@ func postfixToNFA(postfix string) (nfa, error) {
 			nfaStack = append(nfaStack, &nfa{initial: &initial, accept: &accept})
 		}
 	}
-	//Return an erro message if there is more than on element left in the array
+	//Return an error message if there is more than on element left in the array
 	if len(nfaStack) > 1 {
 		return *new(nfa), errors.New("NFA conversion error")
 	}
