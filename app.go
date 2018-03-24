@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -30,16 +31,20 @@ type nfa struct {
 
 func main() {
 	//Accept all strings of 0's and 1;s that begin with two zeros
-	n := regexcompile("0.0.(0|1)*")
-	fmt.Println("Regex: 0.0.(0|1)*")
-	fmt.Println("001110 passes:", n.regexmatch("001110"))
-	fmt.Println("01110 passes:", n.regexmatch("01110"))
-	fmt.Println("1000001 passes:", n.regexmatch("1000001"))
-	fmt.Println("001000001 passes:", n.regexmatch("001000001"))
+	if n, err := regexcompile("0.0.(0|1)*"); err == nil {
+		fmt.Println("Regex: 0.0.(0|1)*")
+		fmt.Println("001110 passes:", n.regexmatch("001110"))
+		fmt.Println("01110 passes:", n.regexmatch("01110"))
+		fmt.Println("1000001 passes:", n.regexmatch("1000001"))
+		fmt.Println("001000001 passes:", n.regexmatch("001000001"))
+	} else {
+		fmt.Println(err)
+	}
+
 }
 
 //Compiles a regex string into an NFA linked list
-func regexcompile(r string) nfa {
+func regexcompile(r string) (nfa, error) {
 	//Declare the nfa
 	var nfa nfa
 	//Trim the white spaces from the strng
@@ -48,11 +53,16 @@ func regexcompile(r string) nfa {
 	if len(nr) > 0 {
 		//Convert the infixed regex to postfix
 		nr = convertInfixToPostfix(nr)
-		//Create the NFA linked list from the postifxed regex
-		nfa = postfixToNFA(nr)
+		//Try to create the NFA linked list from the postifxed regex
+		if nfa, err := postfixToNFA(nr); err == nil {
+			//Return the created NFA
+			return nfa, nil
+		}
+		//Return the conversion error
+		return nfa, errors.New("Could not compile the regex string")
 	}
-	//Return the nfa
-	return nfa
+	//Return error as the regex string is empty
+	return nfa, errors.New("Invalid regex string")
 }
 
 //Function used to match a string to a regex(nfa structure)
@@ -96,10 +106,9 @@ func (nfa nfa) regexmatch(input string) bool {
 }
 
 //Function converts a positfoxed regular expression string into an NFA
-func postfixToNFA(postfix string) nfa {
+func postfixToNFA(postfix string) (nfa, error) {
 	//Create empty nfa stack
 	nfaStack := []*nfa{}
-
 	//Loop the regular expression
 	for _, r := range postfix {
 		switch r {
@@ -150,8 +159,12 @@ func postfixToNFA(postfix string) nfa {
 			nfaStack = append(nfaStack, &nfa{initial: &initial, accept: &accept})
 		}
 	}
+	//Return an erro message if there is more than on element left in the array
+	if len(nfaStack) > 1 {
+		return *new(nfa), errors.New("NFA conversion error")
+	}
 	//Return the final nfa
-	return *nfaStack[0]
+	return *nfaStack[0], nil
 }
 
 //Gets the nodes which "s" current node points to if the s is not the same as the "a" accept node
@@ -186,10 +199,8 @@ func getPrecedence(c rune) int {
 //Function used to convert infixed regex string to postfixed one
 //The algorithm is using stacks for the conversion
 func convertInfixToPostfix(input string) string {
-	//Slice for the output string
-	output := []rune{}
-	//Slice for storing the current characters
-	stack := []rune{}
+	//Slice for the output string and for the current characters stack
+	output, stack := []rune{}, []rune{}
 
 	//Loop the input string
 	for _, char := range input {
