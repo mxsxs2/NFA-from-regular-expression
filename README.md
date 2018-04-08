@@ -83,8 +83,15 @@ var precedenceMap = map[rune]int{
 ### 2. Convert postfixed string into Nondeterministic Finite Automata(NFA)
 A new structure is introduced to store each state of the NFA. Each structure has two edges to lead to another state, it also has a symbol which is only used if the character in the postfixed string is not a special character. The algorithm is based on a stack. Each stack item has an initial state and an accept state. During the algorithm these items are joined together.
 <br />
-The same special characters are used in this algorithm as in the infix to postfix converter.
+The same special characters are used in this algorithm as in the infix to postfix converter plus the backslash (```\```) for esscaping the next character
 <br />
+
+#### Escaping ```\```
+The current character is backslash, no item is popped from the stack. If the previous character is backslash, a new initial state is created which has this character as the symbol and an empty accept state
+<br />
+A new item is pushed to the stack with the new initial state and the empty accept state.
+<br />
+Essentially this is the same like the character is anot special.
 
 #### Concatenation ```.```
 Two items are popped from the top of the stack the "higher" item's accept state is connected to the "lower" items accept state, then as a new conjoined item, it is pushed back to the stack.
@@ -145,7 +152,7 @@ After the main loop is finished a new loop goes through the remainder of the cur
 ## Extension possibilities
 As this is a really simple regular expression parser, there is a possibility to add a number of new features:
 <br />
-* Character escaping: ```\*```
+* ~~Character escaping: ```\*```~~
 * Character ranges: ```[a-zA-z]``` ```[0-9]```
 * Quantifiers: ```{1}``` ```{1,}```
 And so on...

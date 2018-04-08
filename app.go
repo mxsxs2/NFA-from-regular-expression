@@ -210,11 +210,6 @@ func postfixToNFA(postfix string) (nfa, error) {
 		}
 		//If the current rune is backslash
 		if string(r) == `\` {
-			//Pop the second fragment form the NFA stack
-			frag2 := nfaStack[len(nfaStack)-1]
-			nfaStack = nfaStack[:len(nfaStack)-1]
-			//Push the new fragmenst back to the NFA stack
-			nfaStack = append(nfaStack, &nfa{initial: frag2.initial, accept: frag2.accept})
 			//Set the r to the previous
 			prev = string(r)
 			//Dont do the switch
