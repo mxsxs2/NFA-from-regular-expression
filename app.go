@@ -99,6 +99,30 @@ func main() {
 		fmt.Println(err)
 	}
 
+	//Check if the backslash works
+	if n, err := regexcompile(`0.0.1.\*.1`); err == nil {
+		fmt.Println()
+		fmt.Println(`Regex: 0.0.1.\*.1`)
+		fmt.Println("0011 passes:", n.regexmatch("0011"))
+		fmt.Println("001*1 passes:", n.regexmatch("001*1"))
+		fmt.Println("00111 passes:", n.regexmatch("00111"))
+		fmt.Println("0001110 passes:", n.regexmatch("0001110"))
+	} else {
+		fmt.Println(err)
+	}
+	//Check if the backslash works
+	if n, err := regexcompile(`0.0.1.\+.\*.1`); err == nil {
+		fmt.Println()
+		fmt.Println(`Regex: 0.0.1.\+.\*.1`)
+		fmt.Println("001+1 passes:", n.regexmatch("001+1"))
+		fmt.Println("001+*1 passes:", n.regexmatch("001+*1"))
+		fmt.Println("001*1 passes:", n.regexmatch("001*1"))
+		fmt.Println("0011 passes:", n.regexmatch("00111"))
+		fmt.Println("000110 passes:", n.regexmatch("0001110"))
+	} else {
+		fmt.Println(err)
+	}
+
 }
 
 //Compiles a regex string into an NFA linked list
@@ -167,8 +191,36 @@ func (nfa nfa) regexmatch(input string) bool {
 func postfixToNFA(postfix string) (nfa, error) {
 	//Create empty nfa stack
 	nfaStack := []*nfa{}
+	//Previouse character
+	var prev string
 	//Loop the regular expression
 	for _, r := range postfix {
+		//If the current rune has to be escaped
+		if prev == `\` {
+			//Create an empty accept node
+			accept := nfaNode{}
+			//Add the current non special character to a new node
+			initial := nfaNode{symbol: r, edge1: &accept}
+			//Push the new nodes to the stack
+			nfaStack = append(nfaStack, &nfa{initial: &initial, accept: &accept})
+			//Set the r to the previous
+			prev = string(r)
+			//Dont do the switch
+			continue
+		}
+		//If the current rune is backslash
+		if string(r) == `\` {
+			//Pop the second fragment form the NFA stack
+			frag2 := nfaStack[len(nfaStack)-1]
+			nfaStack = nfaStack[:len(nfaStack)-1]
+			//Push the new fragmenst back to the NFA stack
+			nfaStack = append(nfaStack, &nfa{initial: frag2.initial, accept: frag2.accept})
+			//Set the r to the previous
+			prev = string(r)
+			//Dont do the switch
+			continue
+		}
+
 		switch r {
 		case '.':
 			//Pop the second fragment form the NFA stack
@@ -244,6 +296,8 @@ func postfixToNFA(postfix string) (nfa, error) {
 			//Push the new nodes to the stack
 			nfaStack = append(nfaStack, &nfa{initial: &initial, accept: &accept})
 		}
+		//Set the r to the previous
+		prev = string(r)
 	}
 	//Return an error message if there is more than on element left in the array
 	if len(nfaStack) > 1 {
