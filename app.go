@@ -40,9 +40,9 @@ func main() {
 	} else {
 		fmt.Println(err)
 	}
+	fmt.Println()
 	//Check if the + detection works
 	if n, err := regexcompile("0.0.1+"); err == nil {
-		fmt.Println()
 		fmt.Println("Regex: 0.0.1+")
 		fmt.Println("001110 passes:", n.regexmatch("001110"))
 		fmt.Println("001 passes:", n.regexmatch("001"))
@@ -52,20 +52,20 @@ func main() {
 	} else {
 		fmt.Println(err)
 	}
+	fmt.Println()
 	if n, err := regexcompile("0.0.1+.(0|1)*"); err == nil {
-		fmt.Println()
 		fmt.Println("Regex: 0.0.1+.(0|1)*")
 		fmt.Println("001110 passes:", n.regexmatch("001110"))
 		fmt.Println("001 passes:", n.regexmatch("001"))
-		fmt.Println("00111 passes:", n.regexmatch("00111"))
+		fmt.Println("00101 passes:", n.regexmatch("00101"))
 		fmt.Println("00 passes:", n.regexmatch("00"))
 		fmt.Println("0001110 passes:", n.regexmatch("0001110"))
 	} else {
 		fmt.Println(err)
 	}
+	fmt.Println()
 	//Check if the ? detection works
 	if n, err := regexcompile("0.0.1?"); err == nil {
-		fmt.Println()
 		fmt.Println("Regex: 0.0.1?")
 		fmt.Println("001110 passes:", n.regexmatch("001110"))
 		fmt.Println("001 passes:", n.regexmatch("001"))
@@ -75,8 +75,8 @@ func main() {
 	} else {
 		fmt.Println(err)
 	}
+	fmt.Println()
 	if n, err := regexcompile("0.0.1?.0*"); err == nil {
-		fmt.Println()
 		fmt.Println("Regex: 0.0.1?.0*")
 		fmt.Println("001110 passes:", n.regexmatch("001110"))
 		fmt.Println("001 passes:", n.regexmatch("001"))
@@ -86,9 +86,9 @@ func main() {
 	} else {
 		fmt.Println(err)
 	}
+	fmt.Println()
 	//Check if the difference between * and +
 	if n, err := regexcompile("0.0.1*"); err == nil {
-		fmt.Println()
 		fmt.Println("Regex: 0.0.1*")
 		fmt.Println("001110 passes:", n.regexmatch("001110"))
 		fmt.Println("001 passes:", n.regexmatch("001"))
@@ -98,10 +98,9 @@ func main() {
 	} else {
 		fmt.Println(err)
 	}
-
+	fmt.Println()
 	//Check if the backslash works
 	if n, err := regexcompile(`0.0.1.\*.1`); err == nil {
-		fmt.Println()
 		fmt.Println(`Regex: 0.0.1.\*.1`)
 		fmt.Println("0011 passes:", n.regexmatch("0011"))
 		fmt.Println("001*1 passes:", n.regexmatch("001*1"))
@@ -110,15 +109,27 @@ func main() {
 	} else {
 		fmt.Println(err)
 	}
+	fmt.Println()
 	//Check if the backslash works
 	if n, err := regexcompile(`0.0.1.\+.\*.1`); err == nil {
-		fmt.Println()
 		fmt.Println(`Regex: 0.0.1.\+.\*.1`)
 		fmt.Println("001+1 passes:", n.regexmatch("001+1"))
 		fmt.Println("001+*1 passes:", n.regexmatch("001+*1"))
 		fmt.Println("001*1 passes:", n.regexmatch("001*1"))
 		fmt.Println("0011 passes:", n.regexmatch("00111"))
 		fmt.Println("000110 passes:", n.regexmatch("0001110"))
+	} else {
+		fmt.Println(err)
+	}
+	fmt.Println()
+	//Check if the . was omitted
+	if n, err := regexcompile("001+(0|1)*"); err == nil {
+		fmt.Println("Regex: 001+(0|1)*")
+		fmt.Println("001110 passes:", n.regexmatch("001110"))
+		fmt.Println("001 passes:", n.regexmatch("001"))
+		fmt.Println("00111 passes:", n.regexmatch("00111"))
+		fmt.Println("00 passes:", n.regexmatch("00"))
+		fmt.Println("0001110 passes:", n.regexmatch("0001110"))
 	} else {
 		fmt.Println(err)
 	}
@@ -195,6 +206,14 @@ func postfixToNFA(postfix string) (nfa, error) {
 	var prev string
 	//Loop the regular expression
 	for _, r := range postfix {
+		//If the current rune is backslash
+		if string(r) == `\` {
+			//Set the previous character
+			prev = string(r)
+			//Dont do the switch
+			continue
+		}
+
 		//If the current rune has to be escaped
 		if prev == `\` {
 			//Create an empty accept node
@@ -203,14 +222,7 @@ func postfixToNFA(postfix string) (nfa, error) {
 			initial := nfaNode{symbol: r, edge1: &accept}
 			//Push the new nodes to the stack
 			nfaStack = append(nfaStack, &nfa{initial: &initial, accept: &accept})
-			//Set the r to the previous
-			prev = string(r)
-			//Dont do the switch
-			continue
-		}
-		//If the current rune is backslash
-		if string(r) == `\` {
-			//Set the r to the previous
+			//Set the previous character
 			prev = string(r)
 			//Dont do the switch
 			continue
@@ -291,10 +303,11 @@ func postfixToNFA(postfix string) (nfa, error) {
 			//Push the new nodes to the stack
 			nfaStack = append(nfaStack, &nfa{initial: &initial, accept: &accept})
 		}
-		//Set the r to the previous
+		//Set the previous character
 		prev = string(r)
 	}
-	//Return an error message if there is more than on element left in the array
+
+	//If there is still more than one left then there is an error in the regex string
 	if len(nfaStack) > 1 {
 		return *new(nfa), errors.New("NFA conversion error")
 	}
